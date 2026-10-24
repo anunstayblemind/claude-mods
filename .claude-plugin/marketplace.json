@@ -1,0 +1,14 @@
+{
+  "name": "claude-mods",
+  "owner": { "name": "UnStaybleMind" },
+  "metadata": { "description": "Claude Code mods by UnStaybleMind, free and MIT licensed." },
+  "plugins": [
+    {
+      "name": "backseat",
+      "source": "./plugins/backseat",
+      "description": "A fake Twitch chat that reacts live to what Claude is doing.",
+      "version": "0.3.0",
+      "category": "mod"
+    }
+  ]
+}
