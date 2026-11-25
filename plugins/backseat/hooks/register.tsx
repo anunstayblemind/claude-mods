@@ -16,23 +16,23 @@ let buffer: string[] = []
 let lastAt = 0
 let isBusy = false
 
-// Turn what happened since the last reaction into a few chat lines.
+// Turn what happened since the last reaction into a few chat lines. Never rejects: a failure just means a quiet chat.
 const react = async ($: any, isForced: boolean) => {
   if (isBusy || buffer.length === 0) return
-  const isOn = (await $.state.get(IS_ON)).value ?? true
-  if (!isOn) {
-    buffer = []
-    return
-  }
-  const calls = (await $.state.get(CALLS)).value ?? 0
-  const now = await $.clock.now()
-  if (calls >= MAX_CALLS || (!isForced && now - lastAt < MIN_GAP_MS)) return
-
   isBusy = true
-  lastAt = now
-  const events = buffer.slice(-10)
-  buffer = []
   try {
+    const isOn = (await $.state.get(IS_ON)).value ?? true
+    if (!isOn) {
+      buffer = []
+      return
+    }
+    const calls = (await $.state.get(CALLS)).value ?? 0
+    const now = await $.clock.now()
+    if (calls >= MAX_CALLS || (!isForced && now - lastAt < MIN_GAP_MS)) return
+
+    lastAt = now
+    const events = buffer.slice(-10)
+    buffer = []
     const r = await $.model.complete({
       model: 'haiku',
       maxTokens: 220,
@@ -76,16 +76,23 @@ export const register: Register = on => {
     return { text: 'Chat opened.' }
   })
 
+  // A person sent it: 'composer' is Enter at the terminal, 'bridge' a Remote Control client (phone or web),
+  // 'sdk' an Agent SDK host such as the desktop app.
+  const TYPED = new Set<string>(['composer', 'bridge', 'sdk'])
+
+  // These two sit in the path of your prompt and of every tool call. If either fails or runs over its budget,
+  // .catch lets the prompt or the call go through; the chat just misses that one.
   on('prompt.submit', ($, e, next) => {
-    if (!e.isMeta && e.origin.kind === 'user') buffer.push(`streamer asked: ${e.text.replace(/\s+/g, ' ').slice(0, 100)}`)
+    const kind: string | undefined = (e as any).origin?.kind
+    if (!e.isMeta && kind !== undefined && TYPED.has(kind)) buffer.push(`streamer asked: ${String(e.text ?? '').replace(/\s+/g, ' ').slice(0, 100)}`)
     return next(e)
-  })
+  }).catch(($, e, next) => next(e))
 
   on('tool.call', ($, e, next) => {
     buffer.push(summarize(e.tool, (e as any).input))
     void react($, false)
     return next(e)
-  })
+  }).catch(($, e, next) => next(e))
 
   on('turn.complete', ($, e, next) => {
     buffer.push('Claude finished the turn')

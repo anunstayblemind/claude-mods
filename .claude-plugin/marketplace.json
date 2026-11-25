@@ -7,7 +7,7 @@
       "name": "backseat",
       "source": "./plugins/backseat",
       "description": "A fake Twitch chat that reacts live to what Claude is doing.",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "category": "mod"
     }
   ]

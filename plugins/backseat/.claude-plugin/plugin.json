@@ -1,6 +1,6 @@
 {
   "name": "backseat",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A fake Twitch chat that reacts live to what Claude is doing. Haiku writes it on your subscription.",
   "author": { "name": "UnStaybleMind" },
   "license": "MIT",

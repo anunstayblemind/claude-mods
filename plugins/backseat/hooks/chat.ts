@@ -8,7 +8,7 @@ export type ParsedLine = { name: string; text: string; color: string; isAdmin: b
 const pick = (name: string): string => {
   let h = 0
   for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0
-  return COLORS[h % COLORS.length]
+  return COLORS[h % COLORS.length] ?? COLORS[0]
 }
 
 // "name: message" lines from the model; anything else is dropped.
@@ -16,9 +16,11 @@ export function parseChat(reply: string): ParsedLine[] {
   const out: ParsedLine[] = []
   for (const raw of reply.split('\n')) {
     const m = /^\s*[-*]?\s*([A-Za-z0-9_]{3,20})\s*:\s*(.+?)\s*$/.exec(raw)
-    if (m) {
-      const isAdmin = m[1].toUpperCase() === ADMIN_NAME.toUpperCase()
-      out.push({ name: isAdmin ? ADMIN_NAME : m[1], text: m[2].slice(0, 100), color: isAdmin ? 'magenta' : pick(m[1]), isAdmin })
+    const name = m?.[1]
+    const text = m?.[2]
+    if (name && text) {
+      const isAdmin = name.toUpperCase() === ADMIN_NAME.toUpperCase()
+      out.push({ name: isAdmin ? ADMIN_NAME : name, text: text.slice(0, 100), color: isAdmin ? 'magenta' : pick(name), isAdmin })
     }
   }
   return out.slice(0, 7)
